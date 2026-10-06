@@ -1,0 +1,9 @@
+<canvas id="2687:138787" name="Manage / 📖 Exercise (Quản lí Bài tập)" x="0" y="0" width="0" height="0">
+  <frame id="2750:72067" name="Exercises / List / Default" x="0" y="0" width="1440" height="1774">
+    <frame id="2750:72085" name="Page" x="280" y="0" width="1160" height="1774">
+  <frame id="2755:89528" name="Exercises / List / Stats Open" x="1540" y="0" width="1440" height="1774">
+    <frame id="2755:89530" name="Page" x="280" y="0" width="1160" height="1774">
+  <frame id="2755:90910" name="Exercises / List / Options Open" x="3080" y="0" width="1440" height="1774">
+    <frame id="2755:90912" name="Page" x="280" y="0" width="1160" height="1774">
+  <frame id="2755:92279" name="Exercises / List / Info Open" x="4620" y="0" width="1440" height="1774">
+    <frame id="2755:92281" name="Page" x="280" y="0" width="1160" height="1774">
