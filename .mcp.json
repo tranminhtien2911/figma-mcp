@@ -31,6 +31,10 @@
           "whoami": "Who Am I"
         }
       }
+    },
+    "notebooklm": {
+      "command": "C:\\Users\\tmtie\\.local\\bin\\notebooklm-mcp.exe",
+      "args": []
     }
   }
 }

@@ -1,0 +1,14 @@
+# Temporary and generated screenshots
+*.png
+*.jpg
+*.jpeg
+
+# Temporary scripts and logs
+*.log
+scratch/
+__pycache__/
+*.pyc
+
+# OS generated files
+Thumbs.db
+.DS_Store
