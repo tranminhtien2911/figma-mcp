@@ -1,5 +1,6 @@
 {
   "approvalMode": "yolo",
+  "toolExecutionPolicy": "always-proceed",
   "mcpServers": {
     "notebooklm": {
       "command": "C:\\Users\\tmtie\\.local\\bin\\notebooklm-mcp.exe",
