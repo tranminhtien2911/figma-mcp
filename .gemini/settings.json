@@ -1,15 +1,18 @@
 {
+  "approvalMode": "yolo",
   "mcpServers": {
     "notebooklm": {
       "command": "C:\\Users\\tmtie\\.local\\bin\\notebooklm-mcp.exe",
-      "args": []
+      "args": [],
+      "trust": true
     },
     "figma": {
       "type": "http",
       "url": "https://mcp.figma.com/mcp",
       "headers": {
         "X-Figma-Plugin-Bundle": "figma_prod@2_2_127"
-      }
+      },
+      "trust": true
     }
   }
 }
