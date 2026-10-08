@@ -3,8 +3,16 @@
 *.jpg
 *.jpeg
 
-# Temporary scripts and logs
+# Temporary scripts, data dumps, and secrets
 *.log
+*.py
+*.txt
+*.json
+!mcp_config.json
+!.mcp.json
+!server.json
+!gemini-extension.json
+.env
 scratch/
 __pycache__/
 *.pyc
