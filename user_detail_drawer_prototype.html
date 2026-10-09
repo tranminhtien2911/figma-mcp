@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chi tiết Người dùng - Click-Ed QA Dashboard (Tối Ưu Ngành Nghề)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Đảm bảo mọi button, hàng bảng và tab luôn có con trỏ pointer */
+    button, [role="button"], tr[onclick], .clickable-tab {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Modal & Drawer States */
+    #modal-container {
+      transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-closed {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
+      display: none !important;
+    }
+    .modal-content {
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+    }
+    .modal-closed .modal-content {
+      transform: scale(0.96);
+    }
+
+    #drawer-container {
+      transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-backdrop {
+      transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-panel {
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.22s ease, width 0.22s ease;
+    }
+    .drawer-closed {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
+      display: none !important;
+    }
+    .drawer-closed .drawer-backdrop {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .drawer-closed .drawer-panel {
+      transform: translateX(100%) !important;
+    }
+
+    /* Row highlight for active user in background table */
+    .row-active-user {
+      background-color: #eef2ff !important;
+      border-left: 4px solid #4f46e5 !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white relative">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP APP BAR & FORM-FACTOR TOOLBAR (Z-INDEX 100)                        -->
+  <!-- ========================================================================= -->
+  <header style="z-index: 100;" class="bg-white border-b border-slate-200 px-4 md:px-6 py-2.5 sticky top-0 shadow-xs flex flex-wrap items-center justify-between gap-3">
+    
+    <!-- Title / Breadcrumb -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm md:text-base font-bold text-slate-900">Chi tiết Người dùng &bull; Click-Ed QA</h1>
+          <span class="px-2 py-0.5 text-[11px] font-bold bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200">
+            Đã Tách & Tinh Gọn Ngành Nghề
+          </span>
+        </div>
+        <p class="text-xs text-slate-500">Tách riêng thẻ Chuyên môn, phân tầng Ngành chính &bull; Môn học &bull; Khảo thí</p>
+      </div>
+    </div>
+
+    <!-- Quick Form-factor Switchers -->
+    <div class="flex items-center gap-2 text-xs flex-wrap">
+      
+      <!-- Option 3: Slide-over Drawer (Khuyên dùng) -->
+      <button type="button" onclick="openDrawerView()" id="btn-view-drawer" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs transition-all flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span>1. Trượt phải (Drawer - Khuyên dùng)</span>
+      </button>
+
+      <!-- Option 2: Popup Modal -->
+      <button type="button" onclick="openModalView()" id="btn-view-modal" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-2xs transition-all flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        <span>2. Popup (Gốc)</span>
+      </button>
+
+      <!-- Option 1: Full Page -->
+      <button type="button" onclick="openFullPageView()" id="btn-view-page" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-2xs transition-all flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        <span>3. Trang mới (Full Page)</span>
+      </button>
+
+      <!-- Keyboard Help -->
+      <div class="hidden xl:flex items-center gap-1 text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+        <span>Phím:</span>
+        <kbd class="px-1 py-0.2 bg-white border border-slate-300 rounded font-mono text-[10px]">J</kbd>
+        <kbd class="px-1 py-0.2 bg-white border border-slate-300 rounded font-mono text-[10px]">K</kbd>
+        <span>đổi người</span>
+      </div>
+
+    </div>
+
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 2. BẢNG QUẢN LÝ NỀN (BACKGROUND TABLE CONTEXT)                             -->
+  <!-- ========================================================================= -->
+  <main id="view-table-section" class="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto space-y-4">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <nav class="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
+          <span>QUẢN TRỊ TÀI KHOẢN</span>
+          <span>&gt;</span>
+          <span class="text-slate-900 font-semibold">Tổng số Người dùng</span>
+        </nav>
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold text-slate-900">Danh sách Người dùng Hệ thống</h2>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">5 tài khoản mẫu</span>
+        </div>
+      </div>
+
+      <div class="bg-indigo-50 border border-indigo-200/80 rounded-xl px-3.5 py-2 text-xs text-indigo-900 flex items-center gap-2 shadow-2xs">
+        <span class="text-base">💡</span>
+        <span>Bấm vào bất kỳ dòng nào hoặc nút <strong>"Xem chi tiết"</strong> để mở Drawer.</span>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      
+      <div class="p-3.5 border-b border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50/50">
+        <div class="relative max-w-md w-full">
+          <input type="text" id="table-search-input" oninput="filterTable(this.value)" placeholder="Tìm theo tên, username, email, vai trò..." class="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+            <span>Bộ lọc</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200 text-[11px] tracking-wider">
+            <tr>
+              <th class="p-3.5 w-12 text-center"><input type="checkbox" class="rounded text-indigo-600"></th>
+              <th class="p-3.5">Họ và tên</th>
+              <th class="p-3.5">Email</th>
+              <th class="p-3.5">Vai trò</th>
+              <th class="p-3.5 text-center">Trạng thái</th>
+              <th class="p-3.5 text-center">Ví tiền</th>
+              <th class="p-3.5 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="table-user-tbody" class="divide-y divide-slate-100 font-normal">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <div>Hiển thị <span class="font-bold text-slate-800" id="display-user-count">5</span> / 5 người dùng</div>
+        <div class="flex items-center gap-1">
+          <button class="px-2.5 py-1 border border-slate-200 rounded-lg bg-white text-slate-400 cursor-not-allowed">&laquo; Trước</button>
+          <button class="px-2.5 py-1 bg-indigo-600 text-white rounded-lg font-bold">1</button>
+          <button class="px-2.5 py-1 border border-slate-200 rounded-lg bg-white text-slate-400 cursor-not-allowed">Sau &raquo;</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- ========================================================================= -->
+  <!-- 3. SLIDE-OVER DRAWER (PHƯƠNG ÁN TỐI ƯU NHẤT)                               -->
+  <!-- ========================================================================= -->
+  <div id="drawer-container" class="fixed inset-0 z-50 overflow-hidden drawer-closed" aria-labelledby="drawer-title" role="dialog" aria-modal="true">
+    
+    <!-- Backdrop Blur -->
+    <div onclick="closeDrawerView()" class="drawer-backdrop fixed inset-0 bg-slate-900/40 backdrop-blur-xs cursor-pointer"></div>
+
+    <!-- Drawer Panel Wrapper -->
+    <div class="fixed inset-y-0 right-0 max-w-full flex pointer-events-none">
+      
+      <div id="drawer-panel-el" class="drawer-panel pointer-events-auto w-screen max-w-full sm:max-w-[640px] bg-white shadow-2xl flex flex-col border-l border-slate-200 relative h-full">
+        
+        <!-- DRAWER HEADER: ĐIỀU HƯỚNG LIÊN TỤC -->
+        <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white sticky top-0 z-20">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h3 id="drawer-title" class="text-sm font-bold text-slate-900 leading-tight">Chi tiết Người dùng</h3>
+                <span id="drawer-user-index-badge" class="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold">1/5</span>
+              </div>
+              <p class="text-[11px] text-slate-500">Giữ nguyên bảng &bull; Duyệt nhanh hồ sơ</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" onclick="navigateUser(-1)" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors" title="Người trước (Phím J)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button type="button" onclick="navigateUser(1)" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors" title="Người tiếp (Phím K)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+
+            <div class="h-4 w-px bg-slate-200 mx-0.5"></div>
+
+            <button type="button" onclick="cycleDrawerWidth()" id="btn-drawer-width" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" title="Thay đổi độ rộng Drawer">
+              📐 640px
+            </button>
+
+            <button type="button" onclick="closeDrawerView()" class="w-8 h-8 rounded-xl border border-slate-200 hover:border-slate-300 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- DRAWER TABS BAR -->
+        <div class="px-5 border-b border-slate-200 bg-slate-50/80 flex items-center gap-2 overflow-x-auto text-xs shrink-0">
+          <button type="button" onclick="switchDrawerTab('profile')" id="tab-btn-profile" class="clickable-tab py-2.5 px-3 border-b-2 font-bold border-indigo-600 text-indigo-600 flex items-center gap-1.5 transition-colors">
+            <span>👤 Hồ sơ & Chuyên môn</span>
+          </button>
+          <button type="button" onclick="switchDrawerTab('activity')" id="tab-btn-activity" class="clickable-tab py-2.5 px-3 border-b-2 font-medium border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors">
+            <span>📊 Đóng góp & Hoạt động</span>
+          </button>
+          <button type="button" onclick="switchDrawerTab('permissions')" id="tab-btn-permissions" class="clickable-tab py-2.5 px-3 border-b-2 font-medium border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors">
+            <span>🛡️ Phân quyền & Vai trò</span>
+          </button>
+          <button type="button" onclick="switchDrawerTab('audit')" id="tab-btn-audit" class="clickable-tab py-2.5 px-3 border-b-2 font-medium border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors">
+            <span>⏱️ Nhật ký thao tác</span>
+          </button>
+        </div>
+
+        <!-- DRAWER SCROLLABLE BODY -->
+        <div id="drawer-tab-content-area" class="flex-1 overflow-y-auto p-5 space-y-4">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- DRAWER ACTION FOOTER -->
+        <div class="px-5 py-3 border-t border-slate-200 bg-white flex items-center justify-between shrink-0 shadow-lg">
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="toggleUserLock()" id="btn-lock-user" class="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              <span id="btn-lock-text">Khóa tài khoản</span>
+            </button>
+
+            <button type="button" onclick="triggerResetPassword()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+              <span>Đặt lại mật khẩu</span>
+            </button>
+          </div>
+
+          <button type="button" onclick="closeDrawerView()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs">
+            ✕ Đóng
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- 4. POPUP MODAL (PHƯƠNG ÁN 2: POPUP GỐC)                                   -->
+  <!-- ========================================================================= -->
+  <div id="modal-container" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 md:p-6 modal-closed" role="dialog" aria-modal="true">
+    <div onclick="closeModalView()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity cursor-pointer"></div>
+
+    <div class="modal-content relative bg-white rounded-3xl shadow-2xl max-w-4xl w-full border border-slate-200/90 my-auto overflow-hidden z-10 flex flex-col max-h-[92vh]">
+      
+      <div class="px-6 py-4.5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900 leading-tight">Chi tiết Người dùng (Popup)</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Thông tin tài khoản, vai trò và hoạt động trong hệ thống</p>
+          </div>
+        </div>
+
+        <button type="button" onclick="closeModalView()" class="w-9 h-9 rounded-xl border border-slate-200 hover:border-slate-300 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors">
+          ✕
+        </button>
+      </div>
+
+      <div id="modal-card-inject" class="flex-1 overflow-y-auto p-5 md:p-6 space-y-4">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="px-6 py-3.5 border-t border-slate-200 bg-white flex items-center justify-between shrink-0">
+        <div class="text-[11px] text-slate-500">
+          <span>Bấm <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] font-mono">ESC</kbd> để đóng</span>
+        </div>
+        <button type="button" onclick="closeModalView()" class="px-5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs">
+          ✕ Đóng
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- 5. VIEW FULL PAGE (PHƯƠNG ÁN 3: TRANG MỚI)                                -->
+  <!-- ========================================================================= -->
+  <main id="view-fullpage-section" class="flex-1 p-4 md:p-6 max-w-5xl w-full mx-auto space-y-4 hidden">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+      <div class="flex items-center gap-3">
+        <button type="button" onclick="closeFullPageView()" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 px-3.5 py-2 rounded-xl transition-colors">
+          <span>&larr;</span> Quay lại Bảng Quản lý
+        </button>
+        <div class="h-4 w-px bg-slate-200"></div>
+        <div class="text-xs text-slate-500 font-mono" id="fullpage-url-indicator">
+          Đường dẫn: /admin/users/6896c074c628ea4664cbbc24
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openDrawerView()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1">
+          <span>Chuyển sang Drawer</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="fullpage-card-inject" class="space-y-4">
+      <!-- Rendered by JS -->
+    </div>
+
+  </main>
+
+
+  <!-- TOAST NOTIFICATION UTILITY -->
+  <div id="toast-el" class="fixed bottom-5 right-5 z-[110] bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 transform transition-all duration-300 translate-y-4 opacity-0 pointer-events-none">
+    <span class="text-emerald-400 font-bold">✓</span>
+    <span id="toast-msg">Đã sao chép!</span>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT CONTROLLERS & DATA ARCHITECTURE                                -->
+  <!-- ========================================================================= -->
+  <script>
+    // 1. DATA REPOSITORY CHUẨN XÁC
+    const USERS_LIST = [
+      {
+        id: "6896c074c628ea4664cbbc24",
+        name: "Ky Do",
+        username: "kdo57538",
+        status: "Đã kích hoạt",
+        email: "thuctap2023.nodejs@gmail.com",
+        studentId: "Chưa cập nhật",
+        phone: "0905 128 ***",
+        regDate: "9 tháng 8 năm 2025 10:28",
+        org: "Chưa cập nhật",
+        walletId: "9F6A0E7F62924287A2668432F4ABCBBC",
+        walletStatus: "Đã kích hoạt",
+        gender: "Nam",
+        dob: "9 tháng 8 năm 2019",
+        isLocked: false,
+        stats: { video: 2, question: 0, follower: 15, following: 42, friend: 13 },
+        roles: ["Nhân viên Nhập liệu", "Xem Điểm Môn học", "Người học"],
+        questionActivity: { answered: 0, created: 0, approved: 0, pending: 0, rejected: 0 },
+        // Cấu trúc phân loại chuyên môn chuẩn hóa
+        primaryMajor: "Công nghệ Thông tin",
+        subMajor: "Kỹ thuật Phần mềm",
+        academicGroups: {
+          tech: [
+            "An toàn Thông tin", "Khoa học Máy tính", "Kỹ thuật Phần mềm",
+            "Trí tuệ Nhân tạo", "Khoa học dữ liệu", "Công nghệ mạng/Kỹ thuật Mạng",
+            "Khoa học Thông tin/Thư viện"
+          ],
+          music: [
+            "Căn bản Âm nhạc", "Giáo dục âm nhạc", "Ngành Công nghiệp Âm nhạc",
+            "Đàn Piano/Đàn Organ/Đàn Phím Điện tử", "Nhạc Cổ điển", "Nhạc Jazz",
+            "Nhạc Blues", "Nhạc Pop", "Nhạc Rock", "Nhạc Rap", "Nhạc Dân tộc",
+            "Nhạc Giao hưởng", "Nhạc Khiêu vũ", "Nhạc Đồng quê", "Âm nhạc học"
+          ],
+          exam: [
+            "Kỳ thi Chuẩn Đầu vào Cao học", "Kỳ thi Chứng chỉ Công nghệ Thông tin",
+            "Kỳ thi Học sinh Giỏi Quốc gia", "Kỳ thi Olympic Quốc tế",
+            "Kỳ thi Tiếng Anh Quốc tế", "Kỳ thi Tiếng Nhật Quốc tế",
+            "Kỳ thi Tuyển sinh Lớp 10 THPT"
+          ]
+        },
+        rawTagsCount: 42 // Dữ liệu thô ban đầu có 42 tags do trùng lặp
+      },
+      {
+        id: "6ac2fdbbb81602ed04536727",
+        name: "Nguyễn Quốc Bảo",
+        username: "nguyenquocbao35",
+        status: "Đã kích hoạt",
+        email: "nguyenquocbao35@dtu.edu.vn",
+        studentId: "32212489350",
+        phone: "0934 881 ***",
+        regDate: "5 tháng 10 năm 2026 08:30",
+        org: "Đại học Duy Tân (DTU)",
+        walletId: "C82B6B7814BD453DB851F5352D44B3CF",
+        walletStatus: "Chưa kích hoạt",
+        gender: "Nam",
+        dob: "18 tháng 2 năm 2005",
+        isLocked: false,
+        stats: { video: 0, question: 0, follower: 0, following: 0, friend: 0 },
+        roles: ["Người học"],
+        questionActivity: { answered: 0, created: 0, approved: 0, pending: 0, rejected: 0 },
+        primaryMajor: "Chưa cập nhật",
+        subMajor: "",
+        academicGroups: { tech: [], music: [], exam: [] },
+        rawTagsCount: 0
+      },
+      {
+        id: "71a82fbc19034aa192849201",
+        name: "Nguyễn Trần Đức Khiêm",
+        username: "nguyentduckhai1",
+        status: "Đã kích hoạt",
+        email: "khiem.ntd@click-ed.edu.vn",
+        studentId: "20210892",
+        phone: "0912 334 ***",
+        regDate: "12 tháng 1 năm 2025 14:15",
+        org: "Học viện Click-Ed",
+        walletId: "4A891BC721663DF91A2359B2834190CC",
+        walletStatus: "Đã kích hoạt",
+        gender: "Nam",
+        dob: "20 tháng 11 năm 2002",
+        isLocked: false,
+        stats: { video: 14, question: 85, follower: 120, following: 18, friend: 34 },
+        roles: ["Trợ giảng", "Người kiểm duyệt", "Người học"],
+        questionActivity: { answered: 62, created: 23, approved: 20, pending: 3, rejected: 0 },
+        primaryMajor: "Khoa học Máy tính",
+        subMajor: "Trí tuệ Nhân tạo & Xử lý Dữ liệu",
+        academicGroups: {
+          tech: ["Khoa học Máy tính", "Kỹ thuật Phần mềm", "Trí tuệ Nhân tạo", "An toàn Thông tin"],
+          music: [],
+          exam: ["Kỳ thi Olympic Quốc tế"]
+        },
+        rawTagsCount: 5
+      },
+      {
+        id: "8899acbe120934bb67210984",
+        name: "Trần Thị Tố Trinh",
+        username: "tranttotrinh6",
+        status: "Bị tạm khóa",
+        email: "totrinh.qa@gmail.com",
+        studentId: "Chưa cập nhật",
+        phone: "0988 772 ***",
+        regDate: "18 tháng 4 năm 2025 09:12",
+        org: "Chưa cập nhật",
+        walletId: "77610CB921AA49B76C198234D98124EE",
+        walletStatus: "Chưa kích hoạt",
+        gender: "Nữ",
+        dob: "15 tháng 6 năm 2001",
+        isLocked: true,
+        stats: { video: 0, question: 4, follower: 3, following: 12, friend: 2 },
+        roles: ["Người học"],
+        questionActivity: { answered: 1, created: 3, approved: 0, pending: 1, rejected: 2 },
+        primaryMajor: "Báo chí & Truyền thông",
+        subMajor: "Truyền thông Đa phương tiện",
+        academicGroups: {
+          tech: [],
+          music: [],
+          exam: ["Kỳ thi Tuyển sinh Lớp 10 THPT"]
+        },
+        rawTagsCount: 2
+      },
+      {
+        id: "9912bcde893245aa81923014",
+        name: "Nguyễn Trâm",
+        username: "nguyentramcss",
+        status: "Đã kích hoạt",
+        email: "tram.nt@dtu.edu.vn",
+        studentId: "3119028341",
+        phone: "0977 114 ***",
+        regDate: "20 tháng 3 năm 2025 16:40",
+        org: "Đại học Duy Tân (DTU)",
+        walletId: "88219BCC410982341982301A98BCDA12",
+        walletStatus: "Đã kích hoạt",
+        gender: "Nữ",
+        dob: "10 tháng 10 năm 2003",
+        isLocked: false,
+        stats: { video: 5, question: 18, follower: 45, following: 32, friend: 28 },
+        roles: ["Người học", "Xem Điểm Môn học"],
+        questionActivity: { answered: 12, created: 6, approved: 5, pending: 1, rejected: 0 },
+        primaryMajor: "Thiết kế Đồ họa",
+        subMajor: "UI/UX & Mỹ thuật Số",
+        academicGroups: {
+          tech: ["Thiết kế Đồ họa", "Toán học Đại số"],
+          music: [],
+          exam: []
+        },
+        rawTagsCount: 2
+      }
+    ];
+
+    // 2. RUNTIME STATE
+    const state = {
+      userIndex: 0,
+      activeView: 'drawer',
+      activeDrawerTab: 'profile',
+      isTagsExpanded: false, // Mặc định thu gọn ngành nghề, có nút mở rộng
+      drawerWidthIndex: 0
+    };
+
+    const DRAWER_WIDTHS = [
+      { label: '📐 640px', cls: 'sm:max-w-[640px]' },
+      { label: '📐 780px (Rộng)', cls: 'sm:max-w-[780px]' },
+      { label: '📐 Toàn màn hình', cls: 'sm:max-w-[95vw]' }
+    ];
+
+    function getCurrentUser() {
+      return USERS_LIST[state.userIndex];
+    }
+
+    // 3. TABLE RENDER & ROW SELECTION
+    function renderTable() {
+      const tbody = document.getElementById('table-user-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = USERS_LIST.map((u, idx) => {
+        const isActive = idx === state.userIndex;
+        const activeClass = isActive ? 'row-active-user' : '';
+        const statusBadge = u.isLocked
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">🔒 ĐÃ KHÓA</span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">✔ ĐÃ KÍCH HOẠT</span>`;
+
+        const walletBadge = u.walletStatus === "Đã kích hoạt"
+          ? `<span class="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Đã kích hoạt</span>`
+          : `<span class="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">Chưa tạo</span>`;
+
+        return `
+          <tr onclick="selectUserByIndex(${idx})" class="hover:bg-indigo-50/40 cursor-pointer transition-colors ${activeClass}">
+            <td class="p-3.5 text-center" onclick="event.stopPropagation()"><input type="checkbox" class="rounded text-indigo-600"></td>
+            <td class="p-3.5">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-bold">
+                  ${u.name.charAt(0)}
+                </div>
+                <div>
+                  <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                    ${u.name}
+                    ${u.primaryMajor !== "Chưa cập nhật" ? `<span class="px-1.5 py-0.2 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 rounded font-medium">${u.primaryMajor}</span>` : ''}
+                  </div>
+                  <div class="text-slate-500 font-mono text-[11px]">@${u.username}</div>
+                </div>
+              </div>
+            </td>
+            <td class="p-3.5 font-medium text-slate-800">${u.email}</td>
+            <td class="p-3.5"><span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-[11px] font-semibold">${u.roles[0] || 'Người học'}</span></td>
+            <td class="p-3.5 text-center">${statusBadge}</td>
+            <td class="p-3.5 text-center">${walletBadge}</td>
+            <td class="p-3.5 text-right" onclick="event.stopPropagation()">
+              <button type="button" onclick="selectUserByIndex(${idx})" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 font-semibold rounded-lg text-xs transition-colors">
+                Xem chi tiết &rarr;
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function selectUserByIndex(idx) {
+      state.userIndex = idx;
+      state.isTagsExpanded = false;
+      renderTable();
+      renderAllViews();
+      if (state.activeView === 'modal') openModalView();
+      else if (state.activeView === 'fullpage') openFullPageView();
+      else openDrawerView();
+    }
+
+    function navigateUser(step) {
+      let nextIndex = state.userIndex + step;
+      if (nextIndex < 0) nextIndex = USERS_LIST.length - 1;
+      if (nextIndex >= USERS_LIST.length) nextIndex = 0;
+      state.userIndex = nextIndex;
+      state.isTagsExpanded = false;
+      renderTable();
+      renderAllViews();
+      showToast(`Đã chuyển sang: ${getCurrentUser().name}`);
+    }
+
+    // 4. DRAWER TAB SWITCHER
+    function switchDrawerTab(tabId) {
+      state.activeDrawerTab = tabId;
+      ['profile', 'activity', 'permissions', 'audit'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (btn) {
+          if (t === tabId) btn.className = 'clickable-tab py-2.5 px-3 border-b-2 font-bold border-indigo-600 text-indigo-600 flex items-center gap-1.5 transition-colors';
+          else btn.className = 'clickable-tab py-2.5 px-3 border-b-2 font-medium border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors';
+        }
+      });
+      renderDrawerContent();
+    }
+
+    // 5. RENDER ALL VIEWS
+    function renderAllViews() {
+      renderDrawerContent();
+      renderModal();
+      renderFullPage();
+      updateHeaderBadges();
+    }
+
+    function updateHeaderBadges() {
+      const u = getCurrentUser();
+      const badge = document.getElementById('drawer-user-index-badge');
+      if (badge) badge.textContent = `${state.userIndex + 1}/${USERS_LIST.length}`;
+
+      const lockBtn = document.getElementById('btn-lock-user');
+      const lockText = document.getElementById('btn-lock-text');
+      if (lockBtn && lockText) {
+        if (u.isLocked) {
+          lockBtn.className = 'px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold flex items-center gap-1.5 transition-colors';
+          lockText.textContent = 'Mở khóa tài khoản';
+        } else {
+          lockBtn.className = 'px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors';
+          lockText.textContent = 'Khóa tài khoản';
+        }
+      }
+
+      const fullUrl = document.getElementById('fullpage-url-indicator');
+      if (fullUrl) fullUrl.textContent = `Đường dẫn: /admin/users/${u.id}`;
+    }
+
+    // 6. RENDER DRAWER CONTENT
+    function renderDrawerContent() {
+      const container = document.getElementById('drawer-tab-content-area');
+      if (!container) return;
+      const u = getCurrentUser();
+
+      if (state.activeDrawerTab === 'profile') {
+        container.innerHTML = `
+          ${renderProfileSnapshotCard(u)}
+          ${renderStatCards(u)}
+          ${renderAccountCard(u)}
+          ${renderPersonalCardClean(u)}
+          ${renderSpecializationCard(u)}
+        `;
+      } else if (state.activeDrawerTab === 'activity') {
+        container.innerHTML = `
+          ${renderStatCards(u)}
+          ${renderQuestionActivityCard(u)}
+          ${renderContributionDetails(u)}
+        `;
+      } else if (state.activeDrawerTab === 'permissions') {
+        container.innerHTML = `
+          ${renderRolePermissionCard(u)}
+          ${renderSecurityStatusCard(u)}
+        `;
+      } else if (state.activeDrawerTab === 'audit') {
+        container.innerHTML = `
+          ${renderAuditLogCard(u)}
+        `;
+      }
+    }
+
+    // 7. RENDER MODAL
+    function renderModal() {
+      const container = document.getElementById('modal-card-inject');
+      if (!container) return;
+      const u = getCurrentUser();
+
+      container.innerHTML = `
+        ${renderProfileSnapshotCard(u)}
+        ${renderStatCards(u)}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          ${renderAccountCard(u)}
+          ${renderPersonalCardClean(u)}
+        </div>
+        ${renderSpecializationCard(u)}
+        ${renderRolePermissionCard(u)}
+        ${renderQuestionActivityCard(u)}
+      `;
+    }
+
+    // 8. RENDER FULL PAGE
+    function renderFullPage() {
+      const container = document.getElementById('fullpage-card-inject');
+      if (!container) return;
+      const u = getCurrentUser();
+
+      container.innerHTML = `
+        ${renderProfileSnapshotCard(u)}
+        ${renderStatCards(u)}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          ${renderAccountCard(u)}
+          ${renderPersonalCardClean(u)}
+        </div>
+        ${renderSpecializationCard(u)}
+        ${renderRolePermissionCard(u)}
+        ${renderQuestionActivityCard(u)}
+        ${renderAuditLogCard(u)}
+      `;
+    }
+
+    // =========================================================================
+    // UI COMPONENTS
+    // =========================================================================
+
+    // Profile Snapshot
+    function renderProfileSnapshotCard(u) {
+      const statusPill = u.isLocked
+        ? `<span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">🔒 Tài khoản đã bị khóa</span>`
+        : `<span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">✔ Đã kích hoạt</span>`;
+
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4 md:p-5 bg-white flex items-center justify-between gap-4 shadow-2xs">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-bold text-xl shrink-0">
+              ${u.name.charAt(0)}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="text-lg font-bold text-slate-900 leading-none">${u.name}</h4>
+                <button type="button" onclick="copyToClipboard('${u.name}', this)" class="text-slate-400 hover:text-indigo-600" title="Sao chép tên">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+              </div>
+              <div class="text-slate-500 font-mono text-xs mt-1">@${u.username}</div>
+              <div class="mt-2 flex items-center gap-2">
+                ${statusPill}
+                <span class="text-[11px] text-slate-400 font-mono">ĐK: ${u.regDate.split(' ')[0]} ${u.regDate.split(' ')[1]}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hidden sm:flex items-center gap-1">
+            <button type="button" onclick="navigateUser(-1)" class="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600" title="Người trước">&larr;</button>
+            <button type="button" onclick="navigateUser(1)" class="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600" title="Người tiếp">&rarr;</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // 5 Stat Cards (Đã Tối Ưu Responsive & Phân Cấp Dữ Liệu)
+    function renderStatCards(u) {
+      return `
+        <div class="space-y-2.5">
+          <!-- HÀNG 1: 2 THẺ ĐÓNG GÓP CỐT LÕI (CHIẾM 50% MỖI THẺ, RỘNG RÃI, CÓ NÚT DRILL-DOWN) -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div onclick="switchDrawerTab('activity')" class="border border-slate-200/90 rounded-2xl p-3.5 bg-white shadow-2xs hover:border-indigo-300 hover:bg-indigo-50/20 cursor-pointer transition-all" title="Bấm để xem chi tiết Video">
+              <div class="flex items-center justify-between text-indigo-600">
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </div>
+                <span class="text-xs text-indigo-500 font-semibold flex items-center gap-0.5">Chi tiết &rarr;</span>
+              </div>
+              <div class="mt-2">
+                <div class="text-2xl font-black text-slate-900">${u.stats.video}</div>
+                <div class="text-xs text-slate-500 font-medium mt-0.5">Video đã đăng tải</div>
+              </div>
+            </div>
+
+            <div onclick="switchDrawerTab('activity')" class="border border-slate-200/90 rounded-2xl p-3.5 bg-white shadow-2xs hover:border-indigo-300 hover:bg-indigo-50/20 cursor-pointer transition-all" title="Bấm để xem hoạt động Câu hỏi">
+              <div class="flex items-center justify-between text-indigo-600">
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <span class="text-xs text-indigo-500 font-semibold flex items-center gap-0.5">Chi tiết &rarr;</span>
+              </div>
+              <div class="mt-2">
+                <div class="text-2xl font-black text-slate-900">${u.stats.question}</div>
+                <div class="text-xs text-slate-500 font-medium mt-0.5">Câu hỏi đã tạo</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HÀNG 2: 3 THẺ TƯƠNG TÁC CỘNG ĐỒNG (CHIA ĐỀU 3 CỘT, KHÔNG RỚT DÒNG, KHÔNG THẺ MỒ CÔI) -->
+          <div class="grid grid-cols-3 gap-2.5">
+            <div class="border border-slate-200/90 rounded-2xl p-2.5 bg-white shadow-2xs text-center space-y-0.5">
+              <div class="text-slate-400 flex justify-center">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+              </div>
+              <div class="text-lg font-bold text-slate-900 leading-tight">${u.stats.follower}</div>
+              <div class="text-[11px] text-slate-500 font-medium truncate" title="Người theo dõi">Người theo dõi</div>
+            </div>
+
+            <div class="border border-slate-200/90 rounded-2xl p-2.5 bg-white shadow-2xs text-center space-y-0.5">
+              <div class="text-slate-400 flex justify-center">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </div>
+              <div class="text-lg font-bold text-slate-900 leading-tight">${u.stats.following}</div>
+              <div class="text-[11px] text-slate-500 font-medium truncate" title="Đang theo dõi">Đang theo dõi</div>
+            </div>
+
+            <div class="border border-slate-200/90 rounded-2xl p-2.5 bg-white shadow-2xs text-center space-y-0.5">
+              <div class="text-slate-400 flex justify-center">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              </div>
+              <div class="text-lg font-bold text-slate-900 leading-tight">${u.stats.friend}</div>
+              <div class="text-[11px] text-slate-500 font-medium truncate" title="Bạn bè">Bạn bè</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Account Card
+    function renderAccountCard(u) {
+      const studentIdHtml = u.studentId === "Chưa cập nhật"
+        ? `<span class="text-slate-500">${u.studentId}</span>`
+        : `<div class="flex items-center gap-1.5 font-mono text-slate-800 font-medium">
+            <span>${u.studentId}</span>
+            <button type="button" onclick="copyToClipboard('${u.studentId}', this)" class="p-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors" title="Sao chép Mã SV">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </button>
+           </div>`;
+
+      const walletBadge = u.walletStatus === "Đã kích hoạt"
+        ? `<span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+             <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+             Đã kích hoạt
+           </span>`
+        : `<span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+             <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+             Chưa kích hoạt
+           </span>`;
+
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2 font-bold text-slate-900 text-sm">
+              <span class="text-indigo-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+              </span>
+              <span>Thông tin tài khoản</span>
+            </div>
+            <span class="text-[11px] text-slate-400 font-mono">ID Hệ thống</span>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">CLICK-Ed ID</span>
+              <div class="flex items-center gap-1.5 font-mono text-slate-800 font-medium">
+                <span class="truncate max-w-[170px]" title="${u.id}">${u.id}</span>
+                <button type="button" onclick="copyToClipboard('${u.id}', this)" class="p-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors" title="Sao chép CLICK-Ed ID">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Email liên kết</span>
+              <span class="font-medium text-slate-800 truncate max-w-[210px]" title="${u.email}">${u.email}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Mã số sinh viên</span>
+              ${studentIdHtml}
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Ngày đăng ký</span>
+              <span class="font-medium text-slate-800">${u.regDate}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Tổ chức / Trường</span>
+              <span class="text-slate-700 font-medium">${u.org}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Mã ví tiền</span>
+              <div class="flex items-center gap-1.5 font-mono text-slate-800 font-medium">
+                <span class="truncate max-w-[170px]" title="${u.walletId}">${u.walletId}</span>
+                <button type="button" onclick="copyToClipboard('${u.walletId}', this)" class="p-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors" title="Sao chép Mã ví">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <span class="text-slate-500">Trạng thái Ví</span>
+              ${walletBadge}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // THẺ THÔNG TIN CÁ NHÂN ĐÃ ĐƯỢC LÀM SẠCH (CÂN ĐỐI VỚI THÔNG TIN TÀI KHOẢN)
+    function renderPersonalCardClean(u) {
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2 font-bold text-slate-900 text-sm">
+              <span class="text-indigo-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </span>
+              <span>Thông tin cá nhân</span>
+            </div>
+            <span class="text-[11px] text-slate-400">Hồ sơ xác thực</span>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Tên đăng nhập</span>
+              <span class="font-medium text-slate-800">${u.username}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Giới tính</span>
+              <span class="font-medium text-slate-800">${u.gender}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Ngày sinh</span>
+              <span class="font-medium text-slate-800">${u.dob}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 pb-2">
+              <span class="text-slate-500">Số điện thoại</span>
+              <span class="font-medium text-slate-800 font-mono">${u.phone || 'Chưa cập nhật'}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <span class="text-slate-500">Ngôn ngữ giao diện</span>
+              <span class="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[11px]">Tiếng Việt (vi-VN)</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // THẺ MỚI TÁCH BIỆT: CHUYÊN MÔN & LĨNH VỰC ĐÀO TẠO (CHUẨN HÓA UX NGÀNH NGHỀ)
+    function renderSpecializationCard(u) {
+      const g = u.academicGroups || { tech: [], music: [], exam: [] };
+      const totalDisciplines = (g.tech?.length || 0) + (g.music?.length || 0) + (g.exam?.length || 0);
+
+      if (totalDisciplines === 0 && u.primaryMajor === "Chưa cập nhật") {
+        return `
+          <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-2.5">
+            <div class="flex items-center gap-2 font-bold text-slate-900 text-sm border-b border-slate-100 pb-2.5">
+              <span class="text-indigo-600">🎓</span>
+              <span>Chuyên môn & Ngành nghề</span>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl text-center text-xs text-slate-500 italic">
+              Người dùng này chưa đăng ký ngành học hoặc môn học nào.
+            </div>
+          </div>
+        `;
+      }
+
+      // Giới hạn hiển thị khi chưa bấm xem thêm
+      const visibleTech = state.isTagsExpanded ? g.tech : g.tech.slice(0, 4);
+      const visibleMusic = state.isTagsExpanded ? g.music : g.music.slice(0, 4);
+      const visibleExam = state.isTagsExpanded ? g.exam : g.exam.slice(0, 3);
+      const hiddenCount = totalDisciplines - (visibleTech.length + visibleMusic.length + visibleExam.length);
+
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-5 bg-white shadow-2xs space-y-4">
+          
+          <!-- Header Thẻ Chuyên Môn -->
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                🎓
+              </div>
+              <div>
+                <h5 class="font-bold text-sm text-slate-900">Lĩnh vực Chuyên môn & Ngành đào tạo</h5>
+                <p class="text-[11px] text-slate-500">Phân tầng theo Ngành chính, Môn học và Khảo thí</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-200">
+                ${totalDisciplines} môn & chuyên đề
+              </span>
+            </div>
+          </div>
+
+          <!-- PHÂN CẤP 1: NGÀNH CHÍNH & CHUYÊN NGÀNH NỔI BẬT -->
+          <div class="p-3.5 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 border border-indigo-100 rounded-2xl flex items-center justify-between gap-3">
+            <div>
+              <div class="text-[10px] uppercase font-bold text-indigo-700 tracking-wider">Ngành học chính & Đào tạo</div>
+              <div class="text-base font-extrabold text-slate-900 mt-0.5">${u.primaryMajor}</div>
+              ${u.subMajor ? `<div class="text-xs text-indigo-600 font-medium mt-0.5">Chuyên ngành: <strong>${u.subMajor}</strong></div>` : ''}
+            </div>
+            <div class="shrink-0">
+              <span class="px-3 py-1 bg-white border border-indigo-200 text-indigo-800 rounded-xl text-xs font-bold shadow-2xs">
+                Chính quy
+              </span>
+            </div>
+          </div>
+
+          <!-- PHÂN CẤP 2: CÁC NHÓM MÔN HỌC & LĨNH VỰC CỤ THỂ -->
+          <div class="space-y-3 pt-1">
+            
+            <!-- Nhóm 1: Công nghệ & Kỹ thuật -->
+            ${g.tech && g.tech.length > 0 ? `
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-sky-900 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                    Khoa học Máy tính & Kỹ thuật (${g.tech.length})
+                  </span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  ${visibleTech.map(t => `
+                    <span class="px-2.5 py-1 bg-sky-50 text-sky-800 border border-sky-200/80 rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-2xs">
+                      <span>💻</span> <span>${t}</span>
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Nhóm 2: Âm nhạc & Nghệ thuật -->
+            ${g.music && g.music.length > 0 ? `
+              <div class="space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-purple-900 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                    Âm nhạc & Nghệ thuật (${g.music.length})
+                  </span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  ${visibleMusic.map(m => `
+                    <span class="px-2.5 py-1 bg-purple-50 text-purple-800 border border-purple-200/80 rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-2xs">
+                      <span>🎵</span> <span>${m}</span>
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Nhóm 3: Khảo thí & Kỳ thi -->
+            ${g.exam && g.exam.length > 0 ? `
+              <div class="space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-amber-900 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    Khảo thí & Thi chuẩn hóa (${g.exam.length})
+                  </span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  ${visibleExam.map(e => `
+                    <span class="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-2xs">
+                      <span>🏆</span> <span>${e}</span>
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+          </div>
+
+          <!-- NÚT THU GỌN / XEM TẤT CẢ (PROGRESSIVE DISCLOSURE TINH TẾ) -->
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-400 text-[11px]">
+              ${u.rawTagsCount === 42 ? 'Đã tự động loại bỏ 18 tag trùng lặp từ cơ sở dữ liệu gốc.' : ''}
+            </span>
+            <button type="button" onclick="toggleTagsExpand()" class="text-indigo-600 font-bold hover:underline flex items-center gap-1">
+              <span>${state.isTagsExpanded ? '▲ Thu gọn danh sách' : `▼ Xem thêm (+${hiddenCount} chuyên môn khác)`}</span>
+            </button>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function toggleTagsExpand() {
+      state.isTagsExpanded = !state.isTagsExpanded;
+      renderAllViews();
+    }
+
+    // Role & Permission Card
+    function renderRolePermissionCard(u) {
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-slate-900 text-sm">
+              <span class="text-indigo-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              </span>
+              <span>Vai trò và Quyền hạn cấp phát</span>
+            </div>
+            <button type="button" onclick="editRoles()" class="text-xs text-indigo-600 font-bold hover:underline">
+              + Cấp thêm vai trò
+            </button>
+          </div>
+
+          <div class="flex flex-wrap gap-2 pt-1">
+            ${u.roles.map(r => `
+              <span class="px-3.5 py-1.5 bg-indigo-50/80 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-2xs">
+                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                ${r}
+                <button type="button" onclick="removeRole('${r}')" class="text-indigo-400 hover:text-indigo-800 ml-1" title="Xóa vai trò">✕</button>
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Question Activity Card
+    function renderQuestionActivityCard(u) {
+      const q = u.questionActivity;
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-slate-900 text-sm">
+              <span class="text-indigo-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              </span>
+              <span>Hoạt động Câu hỏi (QA Pipeline)</span>
+            </div>
+            <span class="text-xs text-slate-400">5 trạng thái kiểm thử</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1 text-center">
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition-colors">
+              <div class="text-lg font-bold text-slate-900">${q.answered}</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Đã trả lời</div>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition-colors">
+              <div class="text-lg font-bold text-slate-900">${q.created}</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Đã tạo</div>
+            </div>
+            <div class="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-100 hover:bg-emerald-100/60 transition-colors">
+              <div class="text-lg font-bold text-emerald-700">${q.approved}</div>
+              <div class="text-[11px] text-emerald-600 mt-0.5 font-medium">Được duyệt</div>
+            </div>
+            <div class="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100 hover:bg-amber-100/60 transition-colors">
+              <div class="text-lg font-bold text-amber-700">${q.pending}</div>
+              <div class="text-[11px] text-amber-600 mt-0.5 font-medium">Chưa duyệt</div>
+            </div>
+            <div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100 hover:bg-rose-100/60 transition-colors">
+              <div class="text-lg font-bold text-rose-700">${q.rejected}</div>
+              <div class="text-[11px] text-rose-600 mt-0.5 font-medium">Bị từ chối</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Video details
+    function renderContributionDetails(u) {
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h5 class="font-bold text-sm text-slate-900">Danh sách Video đã đăng tải (${u.stats.video})</h5>
+            <button class="text-xs text-indigo-600 font-semibold hover:underline">+ Tải lên thay mặt</button>
+          </div>
+          ${u.stats.video > 0 ? `
+            <div class="space-y-2 text-xs">
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900">1. Giới thiệu Căn bản Âm nhạc & Ký xướng âm</div>
+                  <div class="text-slate-500 text-[11px] mt-0.5">Thời lượng: 14:20 &bull; Lượt xem: 245</div>
+                </div>
+                <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[10px] font-bold">Công khai</span>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900">2. Hướng dẫn Luyện ngón Piano cho Người mới bắt đầu</div>
+                  <div class="text-slate-500 text-[11px] mt-0.5">Thời lượng: 28:05 &bull; Lượt xem: 1,020</div>
+                </div>
+                <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[10px] font-bold">Công khai</span>
+              </div>
+            </div>
+          ` : `
+            <div class="p-4 bg-slate-50 rounded-xl text-center text-xs text-slate-500">Người dùng này chưa đăng tải video nào.</div>
+          `}
+        </div>
+      `;
+    }
+
+    // Security Status Card
+    function renderSecurityStatusCard(u) {
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-3">
+          <h5 class="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2">Bảo mật & Trạng thái Hoạt động</h5>
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-slate-800">Xác thực 2 bước (2FA)</div>
+                <div class="text-slate-500 text-[11px]">Bảo vệ tài khoản bằng Google Authenticator</div>
+              </div>
+              <span class="px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[11px] font-semibold">Chưa bật</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-slate-800">Trạng thái Khóa truy cập</div>
+                <div class="text-slate-500 text-[11px]">Người dùng không thể đăng nhập khi bị khóa</div>
+              </div>
+              <span class="px-2.5 py-0.5 ${u.isLocked ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'} rounded-md text-[11px] font-bold">
+                ${u.isLocked ? 'ĐANG BỊ KHÓA' : 'HOẠT ĐỘNG BÌNH THƯỜNG'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-slate-800">Lần đổi mật khẩu gần nhất</div>
+                <div class="text-slate-500 text-[11px]">10 tháng 8 năm 2025 (Từ IP: 118.69.12.44)</div>
+              </div>
+              <button onclick="triggerResetPassword()" class="px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold">Gửi link đổi MK</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Audit Log Card
+    function renderAuditLogCard(u) {
+      return `
+        <div class="border border-slate-200/90 rounded-2xl p-4.5 bg-white shadow-2xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h5 class="font-bold text-sm text-slate-900">Lịch sử Thao tác & Hoạt động Gần đây</h5>
+            <span class="text-slate-400 text-[11px]">5 sự kiện gần nhất</span>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+              <div>
+                <div class="font-semibold text-slate-800">Đăng nhập thành công vào Hệ thống QA</div>
+                <div class="text-slate-500 text-[11px]">Hôm nay, 13:42 &bull; Thiết bị: Chrome Windows &bull; IP: 14.161.22.80</div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
+              <div>
+                <div class="font-semibold text-slate-800">Kích hoạt ví tiền: ${u.walletId.slice(0, 10)}...</div>
+                <div class="text-slate-500 text-[11px]">9 tháng 8 năm 2025, 10:35 &bull; Người thực hiện: Tự động</div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
+              <div>
+                <div class="font-semibold text-slate-800">Gán vai trò: ${u.roles.join(', ')}</div>
+                <div class="text-slate-500 text-[11px]">9 tháng 8 năm 2025, 10:30 &bull; Bởi Admin: admin_tien</div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-slate-300 mt-1.5 shrink-0"></div>
+              <div>
+                <div class="font-semibold text-slate-800">Đăng ký tài khoản mới qua cổng sinh viên</div>
+                <div class="text-slate-500 text-[11px]">9 tháng 8 năm 2025, 10:28 &bull; Email: ${u.email}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // ACTION CONTROLLERS
+    // =========================================================================
+    function toggleUserLock() {
+      const u = getCurrentUser();
+      u.isLocked = !u.isLocked;
+      renderTable();
+      renderAllViews();
+      showToast(u.isLocked ? `Đã khóa tài khoản của ${u.name}` : `Đã mở khóa tài khoản của ${u.name}`);
+    }
+
+    function triggerResetPassword() {
+      const u = getCurrentUser();
+      showToast(`Đã gửi email khôi phục mật khẩu đến: ${u.email}`);
+    }
+
+    function editRoles() {
+      const role = prompt("Nhập tên vai trò muốn cấp thêm (ví dụ: Giảng viên, Trợ giảng, Quản trị viên):");
+      if (role && role.trim()) {
+        const u = getCurrentUser();
+        if (!u.roles.includes(role.trim())) {
+          u.roles.push(role.trim());
+          renderAllViews();
+          showToast(`Đã cấp vai trò "${role.trim()}" cho ${u.name}`);
+        }
+      }
+    }
+
+    function removeRole(r) {
+      const u = getCurrentUser();
+      u.roles = u.roles.filter(role => role !== r);
+      renderAllViews();
+      showToast(`Đã thu hồi vai trò "${r}"`);
+    }
+
+    function cycleDrawerWidth() {
+      state.drawerWidthIndex = (state.drawerWidthIndex + 1) % DRAWER_WIDTHS.length;
+      const target = DRAWER_WIDTHS[state.drawerWidthIndex];
+      const panel = document.getElementById('drawer-panel-el');
+      const btn = document.getElementById('btn-drawer-width');
+
+      if (panel) {
+        DRAWER_WIDTHS.forEach(w => panel.classList.remove(w.cls));
+        panel.classList.add(target.cls);
+      }
+      if (btn) btn.textContent = target.label;
+      showToast(`Độ rộng Drawer: ${target.label}`);
+    }
+
+    function filterTable(q) {
+      const query = q.toLowerCase().trim();
+      const rows = document.querySelectorAll('#table-user-tbody tr');
+      let visible = 0;
+      rows.forEach((row, i) => {
+        const u = USERS_LIST[i];
+        if (!u) return;
+        const match = u.name.toLowerCase().includes(query) ||
+                      u.username.toLowerCase().includes(query) ||
+                      u.email.toLowerCase().includes(query) ||
+                      u.roles.some(r => r.toLowerCase().includes(query));
+        if (match) {
+          row.style.display = '';
+          visible++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+      document.getElementById('display-user-count').textContent = visible;
+    }
+
+    function openDrawerView() {
+      state.activeView = 'drawer';
+      closeModalView();
+      closeFullPageView();
+      renderDrawerContent();
+      const drawer = document.getElementById('drawer-container');
+      if (drawer) drawer.classList.remove('drawer-closed');
+      document.body.style.overflow = 'hidden';
+      updateActiveNavBtn('btn-view-drawer');
+    }
+
+    function closeDrawerView() {
+      const drawer = document.getElementById('drawer-container');
+      if (drawer) drawer.classList.add('drawer-closed');
+      document.body.style.overflow = '';
+    }
+
+    function openModalView() {
+      state.activeView = 'modal';
+      closeDrawerView();
+      closeFullPageView();
+      renderModal();
+      const modal = document.getElementById('modal-container');
+      if (modal) modal.classList.remove('modal-closed');
+      document.body.style.overflow = 'hidden';
+      updateActiveNavBtn('btn-view-modal');
+    }
+
+    function closeModalView() {
+      const modal = document.getElementById('modal-container');
+      if (modal) modal.classList.add('modal-closed');
+      document.body.style.overflow = '';
+    }
+
+    function openFullPageView() {
+      state.activeView = 'fullpage';
+      closeModalView();
+      closeDrawerView();
+      renderFullPage();
+      const table = document.getElementById('view-table-section');
+      const page = document.getElementById('view-fullpage-section');
+      if (table) table.classList.add('hidden');
+      if (page) page.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      updateActiveNavBtn('btn-view-page');
+    }
+
+    function closeFullPageView() {
+      const table = document.getElementById('view-table-section');
+      const page = document.getElementById('view-fullpage-section');
+      if (page) page.classList.add('hidden');
+      if (table) table.classList.remove('hidden');
+      updateActiveNavBtn('btn-view-drawer');
+    }
+
+    function updateActiveNavBtn(activeId) {
+      ['btn-view-drawer', 'btn-view-modal', 'btn-view-page'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          if (id === activeId) {
+            el.className = 'px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs transition-all flex items-center gap-1.5';
+          } else {
+            el.className = 'px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-2xs transition-all flex items-center gap-1.5';
+          }
+        }
+      });
+    }
+
+    function copyToClipboard(txt, btnEl) {
+      const origHtml = btnEl ? btnEl.innerHTML : null;
+      const onSuccess = () => {
+        showToast(`Đã sao chép: ${txt}`);
+        if (btnEl) {
+          btnEl.innerHTML = `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
+          setTimeout(() => {
+            if (origHtml) btnEl.innerHTML = origHtml;
+          }, 1500);
+        }
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(txt).then(onSuccess).catch(() => fallbackCopy(txt, onSuccess));
+      } else {
+        fallbackCopy(txt, onSuccess);
+      }
+    }
+
+    function fallbackCopy(txt, cb) {
+      const textArea = document.createElement("textarea");
+      textArea.value = txt;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        if (cb) cb();
+      } catch (err) {
+        showToast('Không thể sao chép tự động, vui lòng chép thủ công!');
+      }
+      document.body.removeChild(textArea);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-el');
+      const msgEl = document.getElementById('toast-msg');
+      if (!toast || !msgEl) return;
+      msgEl.textContent = msg;
+      toast.classList.remove('translate-y-4', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+      }, 2500);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModalView();
+        closeDrawerView();
+      } else if (e.key === 'j' || e.key === 'J' || e.key === ']' || e.key === 'ArrowRight') {
+        if (document.activeElement.tagName !== 'INPUT') navigateUser(1);
+      } else if (e.key === 'k' || e.key === 'K' || e.key === '[' || e.key === 'ArrowLeft') {
+        if (document.activeElement.tagName !== 'INPUT') navigateUser(-1);
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderTable();
+      renderAllViews();
+      openDrawerView();
+    });
+  </script>
+
+</body>
+</html>
